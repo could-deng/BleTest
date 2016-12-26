@@ -1,0 +1,40 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical">
+
+    <RadioButton
+        android:id="@+id/rb_tabTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:button="@null"
+        android:checked="false"
+        android:gravity="center"
+        />
+
+    <ImageView
+        android:id="@+id/iv_message_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_marginLeft="5dp"
+        android:layout_toRightOf="@id/rb_tabTitle"
+        android:background="@drawable/dot_message"
+        android:contentDescription="@null"
+        android:visibility="gone"
+        />
+
+    <TextView
+        android:id="@+id/tv_badge_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/rb_tabTitle"
+        android:background="@drawable/dot_message"
+        android:textSize="8sp"
+        android:visibility="gone"
+        android:layout_marginLeft="3dp"
+        />
+</RelativeLayout>
+
+

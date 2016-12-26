@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+
+
+
+    <color name="textColorPrimary">#FFFFFF</color>
+    <color name="windowDarkBackground">#201F26</color>
+
+
+    <!-- AppMsg color -->
+    <color name="alert">#CC0000</color>
+    <color name="confirm">#FF8800</color>
+    <color name="info">#669900</color>
+
+    <!--adapter三个状态颜色-->
+    <color name="device_connect">#b6d7a8</color>
+    <color name="device_not_connect">#ffe599</color>
+    <color name="device_not_satisfy">#ec5f5f</color>
+    <color name="device_disconnect_buffer">#666666</color>
+
+
+
+
+
+    <!-- material ripple layout -->
+    <color name="transparent">#00FFFFFF</color>
+
+    <color name="white_text">#FFFDFDFB</color>
+    <color name="heart_rate_have_not_connect">#FF3737</color>
+    <color name="heart_rate_have_connected">#28DA8E</color>
+</resources>

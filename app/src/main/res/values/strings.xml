@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">BLETest</string>
+    <string name="heart_rate_warn_sdk_version">The current version of the mobile phone system is less than 4.4, does not have the function of Bluetooth 4.0</string>
+    
+    <string name="start_detect">开始自动检测</string>
+    <string name="stop_detect">停止自动检测</string>
+    <string name="setting">设置</string>
+
+
+    <string name="rsp_error_unknown_error">Unknown error</string>
+
+    <string name="heart_rate_equipment_not_found">未搜索到附近的H10音乐耳机</string>
+
+    <string name="h10_signal">信号强度:%d</string>
+    <string name="h10_light_mode">灯光模式:%s</string>
+    <string name="h10_hr_avg">当前心率:%d</string>
+    <string name="h10_hr_light_intensity">光强度:%d</string>
+    <string name="light_mode_light_always">常亮</string>
+    <string name="light_mode_breath">呼吸</string>
+    <string name="light_mode_heart">心率</string>
+
+    <string name="scanner_title">Select device:</string>
+    <string name="scanner_empty">No device found</string>
+    <string name="scanner_action_scan">Scan</string>
+    <string name="scanner_action_cancel">Cancel</string>
+    <string name="scanner_subtitle_bonded">BONDED DEVICES:</string>
+    <string name="scanner_subtitle_not_bonded">AVAILABLE DEVICES:</string>
+
+    <string name="no_required_permission">Permission denied.</string>
+    <string name="scanner_permission_rationale">Since Android 6.0 Marshmallow system requires granting access to device\'s location in order to scan for Bluetooth Smart devices. Bluetooth beacons may be used to determine the phone\'s and user\'s location.</string>
+    <string name="scanner_equipments_searching">Searching equipments,Waiting&#8230;</string>
+    <string name="scanner_select_heart_rate_equipment">Please select HeartRate equipment to connect:</string>
+
+</resources>

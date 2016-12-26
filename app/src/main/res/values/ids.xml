@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--关注新浪微博-->
+    <item name="ATTENTION_VIEW_ID" type="id"/>
+
+    <item name="swipe_target" type="id" />
+    <item name="swipe_refresh_header" type="id" />
+    <item name="swipe_load_more_footer" type="id" />
+
+    <item name="crop_image_menu_crop" type="drawable"/>
+</resources>

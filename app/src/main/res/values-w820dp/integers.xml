@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--<integer name="activity_anim_duration">300</integer>-->
+
+    <integer name="dialog_continue_finish_button_anim_duration">200</integer>
+
+    <!--<integer name="anim_duration_very_long">1500</integer>-->
+    <!--<integer name="anim_duration_long">500</integer>-->
+    <!--<integer name="anim_duration_short">50</integer>-->
+    <integer name="anim_duration_medium">300</integer>
+
+    <!-- fragment transaction-->
+    <!--<integer name="card_flip_time_full">300</integer>-->
+    <!--<integer name="card_flip_time_half">150</integer>-->
+    <!--<integer name="slide_up_down_duration">200</integer>-->
+    <!--<integer name="half_slide_up_down_duration">150</integer>-->
+    <!--<integer name="slide_up_down_final_value">150</integer>-->
+
+</resources>
