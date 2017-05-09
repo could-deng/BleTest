@@ -15,7 +15,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentLeft="true"
             android:layout_centerInParent="true"
-            android:text="版本号:V1.0"/>
+            android:text="版本号:V1.4"/>
         <Button
             android:id="@+id/bt_setting"
             android:layout_width="wrap_content"
@@ -37,13 +37,13 @@
             android:layout_centerInParent="true"
             android:gravity="center"
             android:checked="false" />
-        <Button
-            android:id="@+id/bt_start_detect"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/start_detect"
-            android:onClick="onClick"
-            android:visibility="gone"/>
+        <!--<Button-->
+            <!--android:id="@+id/bt_start_detect"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:text="@string/start_detect"-->
+            <!--android:onClick="onClick"-->
+            <!--android:visibility="gone"/>-->
         <Button
             android:id="@+id/bt_stop_detect"
             android:layout_width="wrap_content"

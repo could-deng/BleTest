@@ -12,15 +12,13 @@ public class Config {
 
     public static final String BLEFILTERNAME = "BLEFILTERNAME";
     /** 用于BLE设备搜索的名称过滤   */
-    public static final String BleName = "H10";
-
-
+    public static final String BleName = "LAVA H10";
 
     public static final String BlueToothName = "BLUETOOTHNAME";//蓝牙名称
     public static final String BlueToothDefaultName = "LAVA H10";//默认蓝牙名称
 
     public static final String BleSignalMin = "BLESIGNALMINIUM";//ble信号强度最小值
-    public static final int DefaultMinBleSignal = -200;//默认值
+    public static final int DefaultMinBleSignal = 200;//默认值
     public static final String BleHRMIN = "BLEHRMIN";//BLE心率最小值
     public static final int DEFAULTHRMIN = 0;
     public static final String BleHRMAX = "BLEHRMAX";//BLE心率最大值
@@ -40,5 +38,5 @@ public class Config {
 
 
 
-    public static int DeviceConnectNumMax = 6;//BLE设备连接数上限
+    public static int DeviceConnectNumMax = 5;//BLE设备连接数上限
 }

@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,6 +43,7 @@ public class DevicesAdapter extends BaseAdapter {
     public List<BleAdapterBean> getBeanList(){
         return beanList;
     }
+
     @Override
     public int getCount() {
         if ((getBeanList() == null) || (getBeanList().size() == 0)) {
@@ -76,6 +78,9 @@ public class DevicesAdapter extends BaseAdapter {
             holder.tv_ble_photometry = (TextView) view.findViewById(R.id.tv_ble_photometry);
             holder.tv_ble_shine_mode = (TextView) view.findViewById(R.id.tv_ble_shine_mode);
             holder.bt_cut_down = (Button) view.findViewById(R.id.bt_cut_down);
+            holder.bt_type_msg = (ImageView) view.findViewById(R.id.iv_btn_msg_type);
+            holder.bt_type_msg_2 = (ImageView) view.findViewById(R.id.iv_btn_msg_type_2);
+
             view.setTag(holder);
         }
         holder = (DeviceViewHolder) view.getTag();
@@ -118,6 +123,7 @@ public class DevicesAdapter extends BaseAdapter {
         if(bean.getFlag() == Config.DeviceSearchedWithoutConnected){
             holder.bt_cut_down.setVisibility(View.INVISIBLE);
         }else{
+            holder.bt_cut_down.setEnabled(true);
             holder.bt_cut_down.setVisibility(View.VISIBLE);
             holder.bt_cut_down.setText("断开");
         }
@@ -143,7 +149,33 @@ public class DevicesAdapter extends BaseAdapter {
 //                }
             }
         });
-
+            if (!bean.isHrBtnWork()) {
+                holder.bt_type_msg.setBackgroundColor(context.getResources().getColor(R.color.transparent));
+            }else{
+                holder.bt_type_msg.setBackgroundColor(context.getResources().getColor(R.color.light_color_hr_btn));
+            }
+            if(!bean.isfBtnWork()){
+                holder.bt_type_msg_2.setBackgroundColor(context.getResources().getColor(R.color.transparent));
+            }else{
+                holder.bt_type_msg_2.setBackgroundColor(context.getResources().getColor(R.color.light_color_f_btn));
+            }
+//            else if (bean.getPushBtnType() == 0) {
+//                int showTime = bean.getLightShowTime();
+//                if(showTime>0){
+//                    holder.bt_type_msg.setBackgroundColor(context.getResources().getColor(R.color.light_color_hr_btn));
+//                    bean.setLightShowTime(showTime-1);
+//                }else{
+//                    bean.setPushBtnType(-1);
+//                }
+//            } else if (bean.getPushBtnType() == 1) {
+//                int showTime = bean.getLightShowTime();
+//                if(showTime>0){
+//                    holder.bt_type_msg.setBackgroundColor(context.getResources().getColor(R.color.light_color_f_btn));
+//                    bean.setLightShowTime(showTime-1);
+//                }else{
+//                    bean.setPushBtnType(-1);
+//                }
+//            }
         return view;
     }
 
@@ -169,5 +201,7 @@ public class DevicesAdapter extends BaseAdapter {
         public TextView tv_ble_hr_value;
         public TextView tv_ble_photometry;
         public Button bt_cut_down;
+        public ImageView bt_type_msg;//心率按键
+        public ImageView bt_type_msg_2;//F按键
     }
 }

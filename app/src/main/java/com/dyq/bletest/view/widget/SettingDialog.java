@@ -3,6 +3,8 @@ package com.dyq.bletest.view.widget;
 import android.app.DialogFragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.text.TextUtilsCompat;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -134,21 +136,27 @@ public class SettingDialog extends DialogFragment {
 //                        }else{
 //                            Toast.makeText(getActivity(),"输入HrMin、HrMax、LightIntensity有误",Toast.LENGTH_SHORT).toString();
 //                        }
-
-                        if(et_bluetooth_name.getText().toString()!="" && et_ble_signal_value_min.getText().toString()!="") {
-                            if(et_ble_hr_value_min.getText().toString()!="" && et_ble_hr_value_max.getText().toString()!="" && et_ble_light_intensity_min.getText().toString()!=""){
+                        if(!TextUtils.isEmpty(et_bluetooth_name.getText().toString()) && !TextUtils.isEmpty(et_ble_signal_value_min.getText().toString())) {
+                            String hr_min = et_ble_hr_value_min.getText().toString();
+                            String hr_max = et_ble_hr_value_max.getText().toString();
+                            String light_min = et_ble_light_intensity_min.getText().toString();
+                            if(!TextUtils.isEmpty(hr_min) && !TextUtils.isEmpty(hr_max) && !TextUtils.isEmpty(light_min)){
                                 boolean restartService = true;
                                 if(et_bluetooth_name.getText().toString().equals(bleName) && Integer.valueOf(et_ble_signal_value_min.getText().toString()).equals(BleSignalMin)){
                                     restartService = false;
                                 }
-                                filter.setFreshData(et_bluetooth_name.getText().toString(), Integer.valueOf(et_ble_signal_value_min.getText().toString()),
-                                        Integer.valueOf(et_ble_hr_value_min.getText().toString()), Integer.valueOf(et_ble_hr_value_max.getText().toString()),
-                                        Integer.valueOf(et_ble_light_intensity_min.getText().toString()),!rb_auto_connect.isChecked(),restartService);
+                                if(!TextUtils.isEmpty(hr_min) && !TextUtils.isEmpty(hr_max) && !TextUtils.isEmpty(light_min)) {
+                                    filter.setFreshData(et_bluetooth_name.getText().toString(), Integer.valueOf(et_ble_signal_value_min.getText().toString()),
+                                            Integer.valueOf(et_ble_hr_value_min.getText().toString()), Integer.valueOf(et_ble_hr_value_max.getText().toString()),
+                                            Integer.valueOf(et_ble_light_intensity_min.getText().toString()), !rb_auto_connect.isChecked(), restartService);
+                                }else{
+                                    Toast.makeText(getActivity(),"输入HrMin、HrMax、LightIntensity有误",Toast.LENGTH_SHORT).show();
+                                }
                             }else{
-                                Toast.makeText(getActivity(),"输入HrMin、HrMax、LightIntensity有误",Toast.LENGTH_SHORT).toString();
+                                Toast.makeText(getActivity(),"输入HrMin、HrMax、LightIntensity有误",Toast.LENGTH_SHORT).show();
                             }
                         }else{
-                            Toast.makeText(getActivity(),"输入蓝牙名称或者信号强度有误",Toast.LENGTH_SHORT).toString();
+                            Toast.makeText(getActivity(),"输入蓝牙名称或者信号强度有误",Toast.LENGTH_SHORT).show();
                         }
 
                     }

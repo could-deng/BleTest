@@ -19,7 +19,6 @@ import android.os.PowerManager;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.widget.Toast;
-
 import com.dyq.bletest.Config;
 import com.dyq.bletest.bean.BleAdapterBean;
 import com.dyq.bletest.common.Logger;
@@ -31,8 +30,6 @@ import com.dyq.bletest.common.heartRate.BleManagerCallbacks;
 import com.dyq.bletest.common.heartRate.HRSManager;
 import com.dyq.bletest.common.heartRate.HRSManagerCallbacks;
 import com.dyq.bletest.common.heartRate.scanner.ExtendedBluetoothDevice;
-
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -82,6 +79,13 @@ public class HeartRateService extends Service {
     public void setDeviceName(String deviceName) {
         this.deviceName = deviceName;
     }
+    private String getDeviceName(){
+        if(TextUtils.isEmpty(deviceName)){
+//            String name = PrefsHelper.with(HeartRateService.this, Config.PREFS_USER).read(Config.BLEFILTERNAME, Config.BleName);
+            deviceName = PrefsHelper.with(HeartRateService.this, Config.PREFS_USER).read(Config.BlueToothName,Config.BlueToothDefaultName);
+        }
+        return deviceName;
+    }
 
     public void setHrMin(int hrMin) {
         this.hrMin = hrMin;
@@ -104,11 +108,17 @@ public class HeartRateService extends Service {
 
     //region ##################### BLE搜索并连接 #####################
 
-    private static final int MSG_UPDATE = 26;
+    private static final int MSG_UPDATE = 25;////每秒查看要连接的设备列表
     private int DELAYED = 1000;
 
-    private static final int MSG_REFRESH_SEARCHED_LIST = 25;//刷新搜索到的设备列表
+    private static final int MSG_REFRESH_SEARCHED_LIST = 26;//刷新搜索到的设备列表
     private int REFRESH_LIST_DELAY = 5000;//刷新搜索到的设备列表延迟
+
+    private static final int MSG_RECONNECT_DEVICE = 27;//重连设备
+    private int RECONNECT_DEVICE_DELAY = 3000; //每三秒重新连接未连接的设备
+
+    private static final int MSG_RESTART_SERVICE = 28;//重启服务
+    private int RESTART_SERVICE = 1000;//重启服务的延迟
 
 
     //自动搜索
@@ -133,12 +143,18 @@ public class HeartRateService extends Service {
             if (service == null)
                 return;
             switch (msg.what) {
-                case MSG_UPDATE://每秒刷新一次运动数据
+                case MSG_UPDATE://每秒查看要连接的设备列表，去连接设备
                     updateSearchingProgress();
                     break;
 
-                case MSG_REFRESH_SEARCHED_LIST://刷新搜索到的设备列表
+                case MSG_REFRESH_SEARCHED_LIST://每五秒刷新搜索到的设备列表
                     updateSearchedDevice();
+                    break;
+                case MSG_RECONNECT_DEVICE://重连设备
+                    reconnectDevice();
+                    break;
+                case MSG_RESTART_SERVICE:
+                    reInitBleManager();
                     break;
             }
         }
@@ -151,6 +167,64 @@ public class HeartRateService extends Service {
             myHandler = new MyHandler(this);
         }
         return myHandler;
+    }
+
+    /**
+     * 关闭HRSManager之后一秒延迟后重新设置HRSManager，并且开始搜索
+     */
+    private void reInitBleManager(){
+
+        mBleManager = initializeManager();
+
+        searchHREquipments();
+
+    }
+
+    /**
+     * 过滤beanList中
+     * 1.满足settingDialog中连接条件
+     * 2.Flag还是未连接状态
+     * 3.不存在于getClickToDisconnectDeviceList列表中
+     * 的ble设备
+     * 进行连接操作
+     */
+    private void reconnectDevice(){
+        ArrayList<BleAdapterBean> reconnectDevicesList = new ArrayList<>();
+        ArrayList<BleAdapterBean> beanList = getBeansList();
+        ArrayList<String> clickedToDisconnectList = getClickToDisconnectDeviceList();
+        if(beanList.size() == 0) {
+            getMyHandler().sendEmptyMessageDelayed(MSG_RECONNECT_DEVICE,RECONNECT_DEVICE_DELAY);
+            return;
+        }
+        for(BleAdapterBean bean :beanList){
+            if(bean.getFlag()==Config.DeviceSearchedWithoutConnected){
+                boolean canConnect = true;
+                for(String deviceName : clickedToDisconnectList){
+                    if(deviceName.equals(bean.getBleMacName())){
+                        canConnect = false;
+                        break;
+                    }
+                }
+                if(canConnect) {
+                    reconnectDevicesList.add(bean);
+                }
+            }
+        }
+        for(int i =0;i<reconnectDevicesList.size();i++){
+            BleAdapterBean bb = reconnectDevicesList.get(i);
+            if (getmBleManager() != null) {
+                //判断是否满足自动连接的条件，选择性自动连接
+                if(!notAutoConnect) {
+                    if(getConnectedDeivceNum()<=Config.DeviceConnectNumMax) {
+                        if ((!TextUtils.isEmpty(deviceName) && bb.getBleDeviceName().equals(deviceName)) &&((bb.getBleSignal() > (0-deviceMinRssi)) || (deviceMinRssi == 0 ))) {
+                            Logger.i(Logger.DEBUG_TAG,"reconnectDevice(),"+bb.getBleMacName()+"设备重新连接");
+                            getmBleManager().connect(bb.getDevice());
+                        }
+                    }
+                }
+            }
+        }
+        getMyHandler().sendEmptyMessageDelayed(MSG_RECONNECT_DEVICE,RECONNECT_DEVICE_DELAY);
     }
 
     /**
@@ -216,7 +290,6 @@ public class HeartRateService extends Service {
         for(int i = 0;i<toRemoveList.size();i++){
             BleAdapterBean bb = toRemoveList.get(i);
             beansList.remove(bb);
-            Logger.i(Logger.DEBUG_TAG,"beansList.remove(bb):"+bb.getBleMacName());
             for(String name:getClickToDisconnectDeviceList()){
                 if(bb.getBleMacName().equals(name)){
                     getClickToDisconnectDeviceList().remove(name);
@@ -237,6 +310,7 @@ public class HeartRateService extends Service {
         getMyHandler().removeMessages(MSG_REFRESH_SEARCHED_LIST);
         getMyHandler().sendEmptyMessageDelayed(MSG_REFRESH_SEARCHED_LIST, REFRESH_LIST_DELAY);
     }
+
     /**
      * 自动搜索并连接HR设备
      */
@@ -244,8 +318,10 @@ public class HeartRateService extends Service {
         if(!mIsScanning) {
             if (isBLEEnabled()) {//蓝牙开启了
                 mIsScanning = true;
+                getMyHandler().removeCallbacksAndMessages(null);
                 getMyHandler().sendEmptyMessageDelayed(MSG_UPDATE, DELAYED);
                 getMyHandler().sendEmptyMessageDelayed(MSG_REFRESH_SEARCHED_LIST , REFRESH_LIST_DELAY);
+//                getMyHandler().sendEmptyMessageDelayed(MSG_RECONNECT_DEVICE,RECONNECT_DEVICE_DELAY);
 
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     return;
@@ -256,6 +332,7 @@ public class HeartRateService extends Service {
                 final List<ScanFilter> filters = new ArrayList<>();
                 filters.add(new ScanFilter.Builder().setServiceUuid(new ParcelUuid(HRSManager.HR_SERVICE_UUID)).build());
                 scanner.startScan(filters, settings, scanCallback);
+                Toast.makeText(HeartRateService.this,"开启自动检测",Toast.LENGTH_SHORT).show();
             } else {//未开启蓝牙
                 Toast.makeText(HeartRateService.this,"请打开蓝牙",Toast.LENGTH_SHORT).show();
                 requestBlueTooth();
@@ -288,8 +365,7 @@ public class HeartRateService extends Service {
         @Override
         public void onBatchScanResults(final List<ScanResult> results) {
             for (final ScanResult result : results) {
-                String name = PrefsHelper.with(HeartRateService.this, Config.PREFS_USER).read(Config.BLEFILTERNAME,Config.BleName);
-                if(!result.getDevice().getName().contains(name)){//过滤掉不是H10设备的
+                if(!result.getDevice().getName().equals(getDeviceName())){//过滤掉不是H10设备的
                     continue;
                 }
                 final ExtendedBluetoothDevice device = findDevice(result);//与mListValues进行去重过滤
@@ -300,6 +376,7 @@ public class HeartRateService extends Service {
                         for (int i = 0; i < beansList.size(); i++) {//过滤掉已连接的设备
                             BleAdapterBean bean = beansList.get(i);
                             if (extendedBluetoothDevice.device.equals(bean.getDevice())) {
+                                //TODO 只要存在于显示列表并且处于连接了的状态的设备都不过滤掉
                                 if ((bean.getFlag() == Config.DeviceConnectAndMate) || (bean.getFlag() == Config.DeviceConnectNotMate)) {
                                     haveConnectSameDevice = true;
                                     break;
@@ -308,10 +385,6 @@ public class HeartRateService extends Service {
                         }
                     }
                     if(!haveConnectSameDevice) {//第一重过滤没有过滤成功的话进行第二重过滤
-                        Logger.i(Logger.DEBUG_TAG,"getClickToDisconnectDeviceList():"+getClickToDisconnectDeviceList().size());
-                        for(int i =0;i<getClickToDisconnectDeviceList().size() ;i++){
-                            Logger.i(Logger.DEBUG_TAG, "ClickToDisconnectDeviceListTemp:" + getClickToDisconnectDeviceList().get(i));
-                        }
                         for (String deviceName : getClickToDisconnectDeviceList()) {//过滤掉手动断开的设备
                             if (extendedBluetoothDevice.device.getAddress().equals(deviceName)) {
                                 haveConnectSameDevice = true;
@@ -397,33 +470,50 @@ public class HeartRateService extends Service {
      * 根据搜索获取的蓝牙设备集，连接设备
      */
     private void connectDevice(){
-        if(mListValues.size() <= 0){
+        if(mListValues == null || mListValues.size() <= 0){
             return;
         }
         ExtendedBluetoothDevice extendedBlueToothDevice = mListValues.get(0);
         BluetoothDevice bluetoothDevice = extendedBlueToothDevice.device;
+        boolean haveExist = false;
         for(int i = 0; i<beansList.size();i++){
-            if(bluetoothDevice.getAddress().equals(beansList.get(i).getBleMacName())){
-                mListValues.remove(0);
-                return;
+            BleAdapterBean bb = beansList.get(i);
+            //mListValues列表表示要连接的设备，只要在显示列表中并且是连接状态的设备都过滤掉
+            if(bluetoothDevice.getAddress().equals(bb.getBleMacName())){
+                haveExist = true;
+                if((bb.getFlag() == Config.DeviceConnectAndMate) || (bb.getFlag() == Config.DeviceConnectNotMate)) {
+                    mListValues.remove(0);
+                    return;
+                }
             }
         }
         if (getmBleManager() != null) {
             //判断是否满足自动连接的条件，选择性自动连接
             if(!notAutoConnect) {
                 if(getConnectedDeivceNum()<=Config.DeviceConnectNumMax) {
-                    if ((!TextUtils.isEmpty(deviceName) && bluetoothDevice.getName().contains(deviceName)) && extendedBlueToothDevice.rssi > deviceMinRssi) {
-                        beansList.add(new BleAdapterBean(bluetoothDevice, getLeastLightMode(), extendedBlueToothDevice.rssi, Config.DeviceSearchedWithoutConnected));
+                    if ((!TextUtils.isEmpty(deviceName) && bluetoothDevice.getName().equals(deviceName)) &&((extendedBlueToothDevice.rssi > (0-deviceMinRssi)) || (deviceMinRssi == 0 ))) {
+                        if(!haveExist) {
+                            beansList.add(new BleAdapterBean(bluetoothDevice, getLeastLightMode(), extendedBlueToothDevice.rssi, Config.DeviceSearchedWithoutConnected));
+                        }
                         getmBleManager().connect(bluetoothDevice);
+                        if(mListValues.size()>0) {
+                            mListValues.remove(0);//临时加上去，
+                        }
                     } else {
-                        beansList.add(new BleAdapterBean(bluetoothDevice, -1, extendedBlueToothDevice.rssi, Config.DeviceSearchedWithoutConnected));
-                        mListValues.remove(0);
+                        if(!haveExist) {
+                            beansList.add(new BleAdapterBean(bluetoothDevice, -1, extendedBlueToothDevice.rssi, Config.DeviceSearchedWithoutConnected));
+                        }
+                        if(mListValues.size()>0) {
+                            mListValues.remove(0);
+                        }
                     }
                 }else{
                     Toast.makeText(getApplicationContext(),"BLE连接数达到上限",Toast.LENGTH_SHORT).show();
                 }
             }else{
-                beansList.add(new BleAdapterBean(bluetoothDevice, -1, extendedBlueToothDevice.rssi, Config.DeviceSearchedWithoutConnected));
+                if(!haveExist) {
+                    beansList.add(new BleAdapterBean(bluetoothDevice, -1, extendedBlueToothDevice.rssi, Config.DeviceSearchedWithoutConnected));
+                }
                 mListValues.remove(0);
             }
         }
@@ -574,9 +664,10 @@ public class HeartRateService extends Service {
     }
 
     public void removeAllClickToDisconnectList(){
-        if(getClickToDisconnectDeviceList().size()>0) {
+        if(getClickToDisconnectDeviceList()!=null && getClickToDisconnectDeviceList().size()>0) {
             getClickToDisconnectDeviceList().clear();
         }
+
     }
 
     public ArrayList<BleAdapterBean> getBeansList() {
@@ -635,15 +726,19 @@ public class HeartRateService extends Service {
         super.onDestroy();
     }
 
-    public void restartService(){
+    public void closeAndInitBLEManager(){
         //断开连接
         if(mBleManager!=null) {
             mBleManager.disconnect();
+            mBleManager.close();
+            mBleManager.setGattCallbacks(null);
 
             mListValues.clear();
             beansList.clear();
             allSearchedDevice.clear();
             removeAllClickToDisconnectList();
+
+            getMyHandler().sendEmptyMessageDelayed(MSG_RESTART_SERVICE,RESTART_SERVICE);
         }
     }
     /**
@@ -667,6 +762,7 @@ public class HeartRateService extends Service {
         mListValues = null;
         beansList = null;
         allSearchedDevice = null;
+        mClickToDisconnectDeviceList = null;
 
         //过滤条件
         deviceMinRssi = 0;
@@ -741,9 +837,6 @@ public class HeartRateService extends Service {
                 getmBleManager().sendHRCmd(device.getAddress(),beansList.get(index).getBleShineMode());
             }
 
-//            if(isConnecting){
-//                isConnecting = false;
-//            }
         }
 
         @Override
@@ -799,7 +892,7 @@ public class HeartRateService extends Service {
 
         @Override
         public void onDeviceNotSupported() {
-//            Logger.i(Logger.DEBUG_TAG, "onDeviceNotSupported()!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            Logger.i(Logger.DEBUG_TAG, "onDeviceNotSupported()!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         }
 
         @Override
@@ -811,7 +904,6 @@ public class HeartRateService extends Service {
                 if(bean.getDevice().getAddress().equals(device.getAddress())){
                     index = i;
                     bean.setBleSignal(signalValue);
-
                 }
             }
             /**
@@ -825,7 +917,21 @@ public class HeartRateService extends Service {
 
         @Override
         public void onPushBtnReceived(BluetoothDevice device,int btnType, int msgType) {
-//            Logger.i(Logger.DEBUG_TAG, "HeartRateService,"+device.getAddress()+",onPushBtnReceived(),btnType=" + btnType + "，msgType:" + msgType);
+            Logger.i(Logger.DEBUG_TAG, device.getAddress()+",onPushBtnReceived(),btnType=" + btnType + "，msgType:" + msgType);
+            for(int i=0;i<beansList.size();i++){
+                BleAdapterBean bean = beansList.get(i);
+                if(bean.getDevice().getAddress().equals(device.getAddress())){
+                    if(msgType == 0) {//只对单击事件做操作
+//                        bean.setPushBtnType(btnType);//按键类型
+                        if(btnType == 0){
+                            bean.setHrBtnWork(true);
+                        }else if(btnType == 1){
+                            bean.setfBtnWork(true);
+                        }
+//                        bean.setLightShowTime(2);//显示2秒
+                    }
+                }
+            }
         }
 
         @Override
@@ -841,12 +947,38 @@ public class HeartRateService extends Service {
                     bean.setBleBleHrValue(current_hr);
                     bean.setBleLightIntensity((lightIntensity*100)/65535);//除以0xffff,百分比
 
-                    if(bean.getBleLightIntensity() >= LightIntensityMin) {//满足光强度条件
-                        if (bean.getBleBleHrValue() >= hrMin && bean.getBleBleHrValue() <= hrMax) {//不满足HR条件
-                            bean.setFlag(Config.DeviceConnectAndMate);
-                        } else {
-                            bean.setFlag(Config.DeviceConnectNotMate);
+                    if(bean.getBleLightIntensity() >= LightIntensityMin || LightIntensityMin == 0) {//满足光强度条件
+                        if(hrMin == 0){
+                            if(hrMax == 0){
+                                bean.setFlag(Config.DeviceConnectAndMate);
+                            }else{
+                                if(bean.getBleBleHrValue() <= hrMax){
+                                    bean.setFlag(Config.DeviceConnectAndMate);
+                                }else{
+                                    bean.setFlag(Config.DeviceConnectNotMate);
+                                }
+                            }
+                        }else{
+                            if(hrMax == 0){
+                                if(bean.getBleBleHrValue() >= hrMin){
+                                    bean.setFlag(Config.DeviceConnectAndMate);
+                                }else{
+                                    bean.setFlag(Config.DeviceConnectNotMate);
+                                }
+                            }else{
+                                if(bean.getBleBleHrValue() >= hrMin && bean.getBleBleHrValue() <= hrMax){
+                                    bean.setFlag(Config.DeviceConnectAndMate);
+                                }else{
+                                    bean.setFlag(Config.DeviceConnectNotMate);
+                                }
+                            }
                         }
+//                        if (hrMin == 0 || hrMax == 0 || (bean.getBleBleHrValue() >= hrMin && bean.getBleBleHrValue() <= hrMax)) {//不满足HR条件
+//                            bean.setFlag(Config.DeviceConnectAndMate);
+//                        } else {
+//                            bean.setFlag(Config.DeviceConnectNotMate);
+//                        }
+
                     }else{//不满足光强度条件
                         bean.setFlag(Config.DeviceConnectNotMate);
                     }

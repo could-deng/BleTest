@@ -203,9 +203,26 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 //			final boolean autoConnect = shouldAutoConnect();
 //			mUserDisconnected = !autoConnect; // We will receive Linkloss events only when the device is connected with autoConnect=true
 			mUserDisconnected = true;
-			BluetoothGatt gatt = device.connectGatt(mContext, false, getGattCallback());
+			boolean haveExistGatt = false;
+			for(int i =0;i<mBluetoothGatt.size();i++){
+				String macAddress = mBluetoothGatt.get(i).getDevice().getAddress();
+				if(macAddress.equals(device.getAddress())){
+					Logger.i(Logger.DEBUG_TAG,"connect(),存在相同macAddress:"+macAddress+"的mBluetoothGatt");
+					haveExistGatt = true;
+//					mBluetoothGatt.get(i).disconnect();
+//					mBluetoothGatt.get(i).close();
+//					mBluetoothGatt.remove(i);
+					break;
+				}
+			}
+
+			BluetoothGatt gatt = device.connectGatt(mContext, false, getGattCallback());//TODO 暂时弄成自动重连设置
 			if(gatt!=null) {
-				mBluetoothGatt.add(gatt);
+				if(!haveExistGatt) {
+					mBluetoothGatt.add(gatt);
+				}else{
+					gatt = null;
+				}
 			}
 		}else{
 			Toast.makeText(getContext(), getContext().getString(R.string.heart_rate_warn_sdk_version), Toast.LENGTH_SHORT).show();
@@ -224,7 +241,9 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 
 				for(int i =0;i<mBluetoothGatt.size();i++){
 					BluetoothGatt gattt = mBluetoothGatt.get(i);
-					mCallbacks.onDeviceDisconnecting(gattt.getDevice().getAddress());
+					if(mCallbacks!=	null) {
+						mCallbacks.onDeviceDisconnecting(gattt.getDevice().getAddress());
+					}
 					gattt.disconnect();
 				}
 			}
@@ -283,6 +302,11 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 			} catch (Exception e) {
 				// the receiver must have been not registered or unregistered before
 			}
+
+			if(getGattCallback()!=null) {
+				getGattCallback().onDeviceDisconnected();
+			}
+
 			if (mBluetoothGatt != null && mBluetoothGatt.size()>0) {
 				for(int i=0;i<mBluetoothGatt.size();i++) {
 					mBluetoothGatt.get(i).close();
@@ -364,10 +388,38 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 					if (cmdCharacteristic != null) {
 						cmdCharacteristic.setValue(bytesMsg);
 						mBluetoothGatt.get(index).writeCharacteristic(cmdCharacteristic);
+						getLightType(macAddress,msgType);
 					}
 				}
 			}
 		}
+	}
+	private void getLightType(String macAddress, int msgType){
+		String lightType = "";
+		switch (msgType){
+			case -1 :
+				lightType = "停止心率检测";
+				break;
+			case 0 :
+				lightType = "开启心率检测";
+				break;
+			case 1:
+				lightType = "心率";
+				break;
+			case 2:
+				lightType = "呼吸";
+				break;
+			case 3:
+				lightType = "关闭灯光";
+				break;
+			case 4:
+				lightType = "清除统计数据";
+				break;
+			case 5:
+				lightType = "常亮";
+				break;
+		}
+		Logger.i(Logger.DEBUG_TAG,macAddress+"设置灯光:"+lightType);
 	}
 
 //	/**
@@ -860,16 +912,23 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 		}
 
 		private void onError(final String message, final int errorCode) {
-//			Logger.e(mLogSession, "Error (0x" + Integer.toHexString(errorCode) + "): " + GattError.parse(errorCode));
+			if(mCallbacks == null){
+				return;
+			}
 			mCallbacks.onError(message, errorCode);
 		}
 
 		@Override
 		public final void onConnectionStateChange(final BluetoothGatt gatt, final int status, final int newState) {
+			if(mCallbacks == null){
+				return;
+			}
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
 				if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
 					// Notify the parent activity/service
-					mCallbacks.onDeviceConnected(gatt.getDevice());
+					if(mCallbacks!=null) {
+						mCallbacks.onDeviceConnected(gatt.getDevice());
+					}
 					mHandler.postDelayed(new Runnable() {
 						@Override
 						public void run() {
@@ -884,11 +943,27 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 					if (newState == BluetoothProfile.STATE_DISCONNECTED) {
 //						if (status != BluetoothGatt.GATT_SUCCESS)
 
-							onDeviceDisconnected();
+//							onDeviceDisconnected();//TODO 改为只有结束时才执行
 
 //						mConnected = false;
 //						if (mUserDisconnected) {
+
+
+						for(int i =0;i<mBluetoothGatt.size();i++){
+							BluetoothGatt gattt = mBluetoothGatt.get(i);
+							String macAddress = gattt.getDevice().getAddress();
+							if(macAddress.equals(gatt.getDevice().getAddress())){
+								Logger.i(Logger.DEBUG_TAG,"onConnectionStateChange，STATE_DISCONNECTED,执行去除:"+macAddress);
+								gattt.disconnect();
+								gattt.close();
+								mBluetoothGatt.remove(gattt);
+								break;
+							}
+						}
+						if(mCallbacks!=null) {
 							mCallbacks.onDeviceDisconnected(gatt.getDevice());
+						}
+
 //							close();//TODO 不销毁
 //						} else {
 //							mCallbacks.onLinklossOccur();
@@ -899,21 +974,22 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 					}
 
 					// TODO Should the disconnect method be called or the connection is still valid? Does this ever happen?
-//				Logger.e(mLogSession, "Error (0x" + Integer.toHexString(status) + "): " + GattError.parseConnectionError(status));
-					mCallbacks.onError(ERROR_CONNECTION_STATE_CHANGE, status);
+					if(mCallbacks!=null) {
+						mCallbacks.onError(ERROR_CONNECTION_STATE_CHANGE, status);
+					}
 				}
 			}
 		}
 
 		@Override
 		public final void onServicesDiscovered(final BluetoothGatt gatt, final int status) {
+			if(mCallbacks == null){
+				return;
+			}
 			if (status == BluetoothGatt.GATT_SUCCESS) {
-//				Logger.i(mLogSession, "Services Discovered");
 				if (isRequiredServiceSupported(gatt)) {
-//					Logger.v(mLogSession, "Primary service found");
 					final boolean optionalServicesFound = isOptionalServiceSupported(gatt);
 					if (optionalServicesFound)
-//						Logger.v(mLogSession, "Secondary service found");
 
 					// Notify the parent activity
 					mCallbacks.onServicesDiscovered(optionalServicesFound);
@@ -932,6 +1008,7 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 					if (!readBatteryLevel(gatt))
 						nextRequest(gatt);
 				} else {
+					Logger.i(Logger.DEBUG_TAG,"BleManager...onServicesDiscovered(),isRequiredServiceSupported(gatt) == false");
 					mCallbacks.onDeviceNotSupported();
 					disconnect(gatt);
 				}
@@ -942,13 +1019,13 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 
 		@Override
 		public final void onCharacteristicRead(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic, final int status) {
+			if(mCallbacks == null){
+				return;
+			}
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
 				if (status == BluetoothGatt.GATT_SUCCESS) {
-//				Logger.i(mLogSession, "Read Response received from " + characteristic.getUuid() + ", value: " + ParserUtils.parse(characteristic));
-
 					if (isBatteryLevelCharacteristic(characteristic)) {
 //					final int batteryValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0);
-//					Logger.a(mLogSession, "Battery level received: " + batteryValue + "%");
 //					mCallbacks.onBatteryValueReceived(batteryValue);
 
 						// The Battery Level value has been read. Let's try to enable Battery Level notifications.
@@ -972,9 +1049,12 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 
 		@Override
 		public void onCharacteristicWrite(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic, final int status) {
+			if(mCallbacks == null){
+				return;
+			}
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
 				/** 写特征值返回结果，status为写操作的结果			 */
-				Logger.i(Logger.DEBUG_TAG, "BleManager,onCharacteristicWrite(),status" + status);
+//				Logger.i(Logger.DEBUG_TAG, "BleManager,onCharacteristicWrite(),status" + status);
 				if (status == BluetoothGatt.GATT_SUCCESS) {
 //				Logger.i(mLogSession, "Data written to " + characteristic.getUuid() + ", value: " + ParserUtils.parse(characteristic.getValue()));
 					// The value has been written. Notify the manager and proceed with the initialization queue.
@@ -992,10 +1072,11 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 
 		@Override
 		public final void onDescriptorWrite(final BluetoothGatt gatt, final BluetoothGattDescriptor descriptor, final int status) {
+			if(mCallbacks == null){
+				return;
+			}
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
 				if (status == BluetoothGatt.GATT_SUCCESS) {
-//				Logger.i(mLogSession, "Data written to descr. " + descriptor.getUuid() + ", value: " + ParserUtils.parse(descriptor));
-
 					if (isServiceChangedCCCD(descriptor)) {
 //					Logger.a(mLogSession, "Service Changed notifications enabled");
 						if (!readBatteryLevel(gatt))
@@ -1003,10 +1084,8 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 					} else if (isBatteryLevelCCCD(descriptor)) {
 						final byte[] value = descriptor.getValue();
 						if (value != null && value.length > 0 && value[0] == 0x01) {
-//						Logger.a(mLogSession, "Battery Level notifications enabled");
 							nextRequest(gatt);
 						} else {
-//						Logger.a(mLogSession, "Battery Level notifications disabled");
 						}
 					} else {
 						nextRequest(gatt);
@@ -1023,11 +1102,13 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 
 		@Override
 		public final void onCharacteristicChanged(final BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
+			if(mCallbacks == null){
+				return;
+			}
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
 //				final String data = ParserUtils.parse(characteristic);
 
 				if (isBatteryLevelCharacteristic(characteristic)) {
-//				Logger.i(mLogSession, "Notification received from " + characteristic.getUuid() + ", value: " + data);
 //				final int batteryValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0);
 //				Logger.a(mLogSession, "Battery level received: " + batteryValue + "%");
 //				mCallbacks.onBatteryValueReceived(batteryValue);
@@ -1036,10 +1117,8 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 					final boolean notifications = cccd == null || cccd.getValue() == null || cccd.getValue().length != 2 || cccd.getValue()[0] == 0x01;
 
 					if (notifications) {
-//					Logger.i(mLogSession, "Notification received from " + characteristic.getUuid() + ", value: " + data);
 						onCharacteristicNotified(gatt, characteristic);
 					} else { // indications
-//					Logger.i(mLogSession, "Indication received from " + characteristic.getUuid() + ", value: " + data);
 						onCharacteristicIndicated(gatt, characteristic);
 					}
 				}

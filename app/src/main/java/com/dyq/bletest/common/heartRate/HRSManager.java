@@ -26,10 +26,6 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.content.Context;
 import android.os.Build;
-
-import com.dyq.bletest.R;
-import com.dyq.bletest.common.Logger;
-
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
@@ -85,6 +81,16 @@ public class HRSManager extends BleManager<HRSManagerCallbacks> {
 		}
 		return managerInstance;
 	}
+
+//	/**
+//	 * 生成新HRSManager,覆盖旧的
+//	 * @param context
+//	 * @return
+//     */
+//	public static synchronized HRSManager newInstance(final Context context){
+//		managerInstance = new HRSManager(context);
+//		return managerInstance;
+//	}
 
 	public HRSManager(final Context context) {
 		super(context);

@@ -1,17 +1,26 @@
 package com.dyq.bletest.view;
 
+import android.Manifest;
+import android.annotation.TargetApi;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.dyq.bletest.Config;
 import com.dyq.bletest.R;
@@ -28,10 +37,10 @@ import java.lang.ref.WeakReference;
 import java.util.List;
 
 public class MainActivity extends BaseActivity {
+    public static final int PERMISSION_REQUEST_COARSE_LOCATION = 1111;
     /**
      * 打开系统蓝牙设置界面
      */
-    private final static int REQUEST_ENABLE_BLUETOOTH = 21;
     private static final int MSG_UPDATE = 26;
     private static final int DELAYED = 1000;
 
@@ -72,6 +81,86 @@ public class MainActivity extends BaseActivity {
         initViews();
     }
 
+    /**
+     * 是否允许蓝牙4.0权限
+     * @return
+     */
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
+    private boolean isBLEEnabled() {
+        final BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        final BluetoothAdapter adapter = bluetoothManager.getAdapter();
+        return adapter != null && adapter.isEnabled();
+    }
+
+    /**
+     * android 版本小于6.0，大于4.4.。。或者大于6.0并且具备GPS权限，则ok
+     * @return
+     */
+    private boolean androidVersionOK(){
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            Toast.makeText(MainActivity.this,"android版本低于4.4，无法搜索BLE蓝牙设备",Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("需要GPS权限");
+                builder.setMessage("GPS授权后才能检测BLE蓝牙设备");
+                builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},PERMISSION_REQUEST_COARSE_LOCATION);
+                        }
+                    }
+                });
+                builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                    @Override
+                    public void onDismiss(DialogInterface dialog) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},PERMISSION_REQUEST_COARSE_LOCATION);
+                        }
+                    }
+                });
+                builder.show();
+                return false;
+            }else {
+                return true;
+            }
+        }
+        Toast.makeText(MainActivity.this,"android版本大于6.0并且不具备GPS权限",Toast.LENGTH_SHORT).show();
+        return false;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_COARSE_LOCATION: {
+
+                if(grantResults.length == 0){
+
+                    return;
+                }
+
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("GPS授权取消");
+                    builder.setMessage("Android版本大于6.0需要GPS权限，GPS授权取消即无法搜索蓝牙BLE设备");
+                    builder.setPositiveButton(android.R.string.ok, null);
+                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                        }
+                    });
+                    builder.show();
+                }
+                return;
+                }
+            }
+        }
+
     private void initViews(){
 //        swipeLayout = (SwipeLoadLayout) findViewById(R.id.swipe_container);
 //        swipeLayout.setLoadMoreEnabled(false);
@@ -86,11 +175,26 @@ public class MainActivity extends BaseActivity {
         cb_start_detect_or_not.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(heartRateService == null ){
+                    cb_start_detect_or_not.setChecked(!isChecked);//让他表现得跟点之前一样
+                    return;
+                }
+                if(!isBLEEnabled()){
+                    cb_start_detect_or_not.setChecked(!isChecked);//让他表现得跟点之前一样
+                    Toast.makeText(MainActivity.this,"请打开蓝牙",Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 if(isChecked){
                     if(!heartRateService.ismIsScanning()){
-                        heartRateService.searchHREquipments();
-                        cb_start_detect_or_not.setChecked(true);
-                        cb_start_detect_or_not.setText(getResources().getString(R.string.stop_detect));
+                        if(androidVersionOK()) {
+                            heartRateService.searchHREquipments();
+                            cb_start_detect_or_not.setChecked(true);
+                            cb_start_detect_or_not.setText(getResources().getString(R.string.stop_detect));
+                        }else{
+                            cb_start_detect_or_not.setChecked(!isChecked);//让他表现得跟点之前一样
+//                            Toast.makeText(MainActivity.this,"android版本大于6.0并且不具备GPS权限",Toast.LENGTH_SHORT).show();
+                        }
                     }else{
                         cb_start_detect_or_not.setChecked(true);
                         cb_start_detect_or_not.setText(getResources().getString(R.string.stop_detect));
@@ -152,11 +256,11 @@ public class MainActivity extends BaseActivity {
 
     public void onClick(View view){
         switch (view.getId()){
-            case R.id.bt_start_detect:
-                if(heartRateService!=null) {
-                    heartRateService.searchHREquipments();
-                }
-                break;
+//            case R.id.bt_start_detect:
+//                if(heartRateService!=null) {
+//                    heartRateService.searchHREquipments();
+//                }
+//                break;
             case R.id.bt_stop_detect:
                 if(heartRateService!=null) {
                     heartRateService.stopScan();
@@ -217,18 +321,22 @@ public class MainActivity extends BaseActivity {
                             heartRateService.setNotAutoConnect(notAutoConnect);
 
                             if(restartService) {
-                                Logger.i(Logger.DEBUG_TAG, "MainActivity,setFreshData(),restartService***************");
+
                                 PrefsHelper.with(MainActivity.this,Config.PREFS_USER).write(Config.BlueToothName, deviceName);
                                 PrefsHelper.with(MainActivity.this,Config.PREFS_USER).writeInt(Config.BleSignalMin, minRssi);
 
                                 heartRateService.setDeviceMinRssi(minRssi);
                                 heartRateService.setDeviceName(deviceName);
 
-                                heartRateService.stopScan();
+                                if(heartRateService.ismIsScanning()){
+                                    Logger.i(Logger.DEBUG_TAG, "MainActivity,setFreshData(),***************closeAndInitBLEManager***************");
+                                    heartRateService.stopScan();
 //                                heartRateService.removeAllClickToDisconnectList();
-                                heartRateService.restartService();
-                                heartRateService.searchHREquipments();
-
+                                    heartRateService.closeAndInitBLEManager();
+                                    Toast.makeText(MainActivity.this,"重启自动检测成功",Toast.LENGTH_SHORT).show();
+                                }else{
+                                    Toast.makeText(MainActivity.this,"目前没有进行自动检测,失败重启自动检测",Toast.LENGTH_SHORT).show();
+                                }
                             }
                         }
                     }
