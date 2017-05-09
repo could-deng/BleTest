@@ -18,6 +18,13 @@ public class BleAdapterBean {
 
     private int flag;//0:连接（默认），1:未连接，2:未满足
 
+    private int pushBtnType;//按键消息，-1为无，0为侧面心率按键，1为F按键
+    private int msgType;//按键类型，-1为无，0位单击
+    private int lightShowTime;//颜色显示时间
+
+    private boolean hrBtnWork;//
+    private boolean fBtnWork;
+
     public BleAdapterBean() {
 
     }
@@ -46,6 +53,11 @@ public class BleAdapterBean {
             this.bleShineMode = ShineMode;
             this.bleBleHrValue = 0;
             this.flag = flag;
+            pushBtnType = -1;
+            msgType = -1;
+            lightShowTime = 0;
+            hrBtnWork = false;
+            fBtnWork = false;
         }
     }
 
@@ -104,5 +116,46 @@ public class BleAdapterBean {
 
     public void setFlag(int flag) {
         this.flag = flag;
+    }
+
+    public int getPushBtnType() {
+        return pushBtnType;
+    }
+
+    public void setPushBtnType(int pushBtnType) {
+        this.pushBtnType = pushBtnType;
+    }
+
+    public int getMsgType() {
+        return msgType;
+    }
+
+    public void setMsgType(int msgType) {
+        this.msgType = msgType;
+    }
+
+    public int getLightShowTime() {
+        return lightShowTime;
+    }
+
+    public void setLightShowTime(int lightShowTime) {
+        this.lightShowTime = lightShowTime;
+    }
+
+
+    public boolean isHrBtnWork() {
+        return hrBtnWork;
+    }
+
+    public void setHrBtnWork(boolean hrBtnWork) {
+        this.hrBtnWork = hrBtnWork;
+    }
+
+    public boolean isfBtnWork() {
+        return fBtnWork;
+    }
+
+    public void setfBtnWork(boolean fBtnWork) {
+        this.fBtnWork = fBtnWork;
     }
 }

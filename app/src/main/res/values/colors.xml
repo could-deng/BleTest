@@ -31,4 +31,10 @@
     <color name="white_text">#FFFDFDFB</color>
     <color name="heart_rate_have_not_connect">#FF3737</color>
     <color name="heart_rate_have_connected">#28DA8E</color>
+
+
+    <!--标示按键类型的颜色-->
+    <color name="light_color_hr_btn">#303F9F</color>
+    <color name="light_color_f_btn">#FF4081</color>
+
 </resources>
