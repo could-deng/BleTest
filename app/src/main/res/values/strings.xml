@@ -19,6 +19,8 @@
     <string name="light_mode_breath">呼吸</string>
     <string name="light_mode_heart">心率</string>
 
+    <string name="not_available">n/a</string>
+    <string name="not_available_value">"- -"</string>
     <string name="scanner_title">Select device:</string>
     <string name="scanner_empty">No device found</string>
     <string name="scanner_action_scan">Scan</string>

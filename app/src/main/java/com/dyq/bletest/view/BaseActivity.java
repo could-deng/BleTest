@@ -1,8 +1,12 @@
 package com.dyq.bletest.view;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.dyq.bletest.R;
 import com.dyq.bletest.view.widget.AppMsg;
@@ -68,6 +72,29 @@ public class BaseActivity extends AppCompatActivity {
         appMsg.show();
         lastShowTime = now;
         lastMsg = msg;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.menu_main,menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        Intent intent = new Intent();
+        switch (item.getItemId()){
+            case R.id.ChartActivity:
+                intent.setClass(BaseActivity.this,ChartActivity.class);
+                startActivity(intent);
+                break;
+            case R.id.MainActivity:
+                intent.setClass(BaseActivity.this,MainActivity.class);
+                startActivity(intent);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
 }

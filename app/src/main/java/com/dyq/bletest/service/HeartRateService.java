@@ -72,6 +72,13 @@ public class HeartRateService extends Service {
     private int LightIntensityMin;
     private boolean notAutoConnect;//= false
 
+    private boolean ifServeForChartActivity;//是否为ChartActivity服务的
+
+    public void setServeForChartActivity(boolean serveForChartActivity){
+        ifServeForChartActivity = serveForChartActivity;
+    }
+
+
     public void setDeviceMinRssi(int deviceMinRssi) {
         this.deviceMinRssi = deviceMinRssi;
     }
@@ -120,6 +127,11 @@ public class HeartRateService extends Service {
     private static final int MSG_RESTART_SERVICE = 28;//重启服务
     private int RESTART_SERVICE = 1000;//重启服务的延迟
 
+    private static final int MSG_REPEART_DRAW_CHART = 29;//每秒重新绘图（有心率的前提）
+    private int REPEART_DRAW_CHART_DELAY = 1000;
+    private boolean ifFirstConnect = false;//是否第一次连接到设备，第一次则发送handler，开始每秒监听心率值
+
+    private long refreshTime = -1;//当前刷新时间
 
     //自动搜索
     private boolean mIsScanning = false;
@@ -156,15 +168,39 @@ public class HeartRateService extends Service {
                 case MSG_RESTART_SERVICE:
                     reInitBleManager();
                     break;
+                case MSG_REPEART_DRAW_CHART://每秒存储心率数据
+                    secondlyMethod();
+                    break;
             }
         }
     }
+
+    /**
+     * 开始记录心率点，每秒的操作
+     */
+    private void secondlyMethod(){
+        //1.数据库存储
+        if (refreshTime == -1) {//第一个点必须要写进数据库
+            refreshTime = System.currentTimeMillis();
+        } else {//其余点根据心率值选择是否写进数据库
+            refreshTime += 1000;//默认增加一秒
+        }
+        writeHeartRateToDb(refreshTime);
+
+        //TODO 页面画图
+        heartRateServiceFunction.reDrawHeartRateData();
+
+        //3.继续每秒刷新
+        getMyHandler().sendEmptyMessageDelayed(MSG_REPEART_DRAW_CHART, REPEART_DRAW_CHART_DELAY);
+    }
+
+
     /**
      * 获取Handler,保证不为null
      */
     private MyHandler getMyHandler() {
         if (myHandler == null) {
-            myHandler = new MyHandler(this);
+            myHandler = new MyHandler(HeartRateService.this);
         }
         return myHandler;
     }
@@ -592,10 +628,12 @@ public class HeartRateService extends Service {
 //         * @param signalValue
 //         */
 //        void onSignalValueReceived(BluetoothDevice device,boolean deviceOff, int signalValue);
-
 //        void onLAVAHRReceive(BluetoothDevice device,int current_heart_rate,int avg_hr, int min_hr, int max_hr);
-
 //        void onSportDataReceive(BluetoothDevice device,int sportMode, int stepBPM, int distance, int totalStep, int speed, int vo2, int calBurnRate, int totalCal, int maxVo2);
+        /**
+         * 更新心率图表
+         */
+        void reDrawHeartRateData();
     }
 
     private HeartRateServiceFunction heartRateServiceFunction;
@@ -633,7 +671,7 @@ public class HeartRateService extends Service {
         beansList = new ArrayList<>();
         allSearchedDevice = new ArrayList<>();//搜索到的全部BLE设备
         mClickToDisconnectDeviceList = new ArrayList<>();
-
+        myHandler = new MyHandler(this);
         /*
 		 * We use the managers using a singleton pattern. It's not recommended for the Android, because the singleton instance remains after Activity has been
 		 * destroyed but it's simple and is used only for this demo purpose. In final application Managers should be created as a non-static objects in
@@ -804,11 +842,18 @@ public class HeartRateService extends Service {
 
         @Override
         public void onHRValueReceived(BluetoothDevice device,int value) {
+            Logger.i(Logger.DEBUG_TAG,"HeartRateService--->onHRValueReceived,value:"+value);
+
         }
 
         @Override
         public void onDeviceConnected(BluetoothDevice device){
             Logger.i(Logger.DEBUG_TAG,device.getAddress()+",onDeviceConnected");
+
+            if(!ifFirstConnect){
+                ifFirstConnect = true;
+                getMyHandler().sendEmptyMessage(MSG_REPEART_DRAW_CHART);
+            }
 
             //扫描结果列表去除掉连接的设备名称
             for(int i =0 ;i<mListValues.size();i++){
@@ -827,16 +872,15 @@ public class HeartRateService extends Service {
                     break;
                 }
             }
-
-            if(!setFlagSuccessful){//如果beansList列表中没有该项，增加该项
-                BleAdapterBean bb = new BleAdapterBean(device, getLeastLightMode(), 0,Config.DeviceConnectNotMate);
-                beansList.add(bb);
-                getmBleManager().sendHRCmd(device.getAddress(), bb.getBleShineMode());
+            if(!ifServeForChartActivity) {//ADD 不为ChartActivity服务才执行
+                if (!setFlagSuccessful) {//如果beansList列表中没有该项，增加该项
+                    BleAdapterBean bb = new BleAdapterBean(device, getLeastLightMode(), 0, Config.DeviceConnectNotMate);
+                    beansList.add(bb);
+                    getmBleManager().sendHRCmd(device.getAddress(), bb.getBleShineMode());
+                } else {
+                    getmBleManager().sendHRCmd(device.getAddress(), beansList.get(index).getBleShineMode());
+                }
             }
-            else{
-                getmBleManager().sendHRCmd(device.getAddress(),beansList.get(index).getBleShineMode());
-            }
-
         }
 
         @Override
@@ -858,16 +902,27 @@ public class HeartRateService extends Service {
         @Override
         public void onDeviceDisconnected(BluetoothDevice device){
             Logger.i(Logger.DEBUG_TAG, device.getAddress()+", onDeviceDisconnected");
+
             //已连接设备集合过滤
-            for(int i =0 ;i<beansList.size();i++) {
+            if(beansList== null || beansList.size() == 0){
+                return;
+            }
+            for (int i = 0; i < beansList.size(); i++) {
                 BleAdapterBean bean = beansList.get(i);
-                if(bean == null || TextUtils.isEmpty(bean.getBleMacName())) continue;
-                if (bean.getBleMacName().equals(device.getAddress())){
-                    getBeansList().get(i).setFlag(Config.DeviceSearchedWithoutConnected);//自动监听到断开的
-                    reStartUpdateSearchedDeviceTask();
+                if (bean == null || TextUtils.isEmpty(bean.getBleMacName())) continue;
+                if (bean.getBleMacName().equals(device.getAddress())) {
+                    if(!ifServeForChartActivity) {
+                        getBeansList().get(i).setFlag(Config.DeviceSearchedWithoutConnected);//自动监听到断开的
+                        reStartUpdateSearchedDeviceTask();
+                    }
+                    else {
+                        beansList.remove(bean);
+                        if(beansList.size()<=0){
+                            getMyHandler().removeCallbacksAndMessages(REPEART_DRAW_CHART_DELAY);//不在进行数据库操作
+                        }
+                    }
                 }
             }
-
         }
 
         @Override
@@ -984,6 +1039,7 @@ public class HeartRateService extends Service {
                     }
                 }
             }
+
         }
 
         @Override
@@ -1075,4 +1131,9 @@ public class HeartRateService extends Service {
     }
 
 
+
+    public void manualConnect(ExtendedBluetoothDevice device){
+        mListValues.add(device);
+        connectDevice();
+    }
 }

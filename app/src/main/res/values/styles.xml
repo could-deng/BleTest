@@ -8,10 +8,13 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
     <style name="AppTheme.NoActionBar.DarkBackground" parent="AppTheme">
-        <item name="windowActionBar">false</item>
+
         <item name="windowNoTitle">true</item>
         <item name="android:windowBackground">@android:color/white</item>
     </style>
+    <!--<item name="windowActionBar">false</item>-->
+
+
 
     <style name="adapterItem">
         <item name="android:textColor">@android:color/black</item>
@@ -60,5 +63,25 @@
         <item name="android:windowExitAnimation">@anim/slide_down</item>
         <item name="android:layout_gravity">center_horizontal</item>
     </style>
+
+
+    <style name="Widget"/>
+
+    <style name="Widget.List">
+        <item name="android:background">@color/backgroundColor</item>
+        <item name="android:gravity">center_horizontal</item>
+    </style>
+
+    <style name="Widget.ListTitle">
+        <item name="android:background">@color/headerBackgroundColor</item>
+        <item name="android:textColor">@color/headerTextColor</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="Widget.ScannerSubtitle">
+        <item name="android:textColor">?attr/colorAccent</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
 
 </resources>

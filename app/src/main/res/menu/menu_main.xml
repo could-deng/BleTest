@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="MainActivity"
+        app:showAsAction="never"
+        android:id="@+id/MainActivity" />
+    <item android:title="ChartActivity"
+        android:id="@+id/ChartActivity"
+        app:showAsAction="never" />
+</menu>

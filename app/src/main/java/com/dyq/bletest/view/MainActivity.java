@@ -3,6 +3,7 @@ package com.dyq.bletest.view;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -16,6 +17,8 @@ import android.os.IBinder;
 import android.os.Message;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -460,30 +463,10 @@ public class MainActivity extends BaseActivity {
     //region ##################### HeartRateService的回调 #####################
 
     private HeartRateService.HeartRateServiceFunction heartRateServiceFunction = new HeartRateService.HeartRateServiceFunction() {
+        @Override
+        public void reDrawHeartRateData() {
 
-//        @Override
-//        public void onDeviceConnected(BluetoothDevice device) {}
-
-//        @Override
-//        public void onDeviceDisconnected(BluetoothDevice device) {}
-
-//        @Override
-//        public void onError() {
-//            Logger.i("TT", "HeartRateActivity,onError()");
-//        }
-
-//        @Override
-//        public void onHRValueReceived(BluetoothDevice device,int hrValue) {
-//        }
-
-//        @Override
-//        public void onSignalValueReceived(BluetoothDevice device,boolean deviceOff, int signalValue) {}
-
-//        @Override
-//        public void onLAVAHRReceive(BluetoothDevice device,int current_hr, int avg_hr, int min_hr, int max_hr) {}
-
-//        @Override
-//        public void onSportDataReceive(BluetoothDevice device, int sportMode, int stepBPM, int distance, int totalStep, int speed, int vo2, int calBurnRate, int totalCal, int maxVo2) {}
+        }
     };
 
 
