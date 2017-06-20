@@ -15,6 +15,8 @@ import android.widget.ListView;
 
 import com.dyq.bletest.Config;
 import com.dyq.bletest.R;
+import com.dyq.bletest.bean.BleAdapterBean;
+import com.dyq.bletest.bean.ChartBean;
 import com.dyq.bletest.bean.HrChartBean;
 import com.dyq.bletest.common.Logger;
 import com.dyq.bletest.common.PrefsHelper;
@@ -27,6 +29,7 @@ import com.dyq.bletest.view.adapter.ChartDeviceAdapter;
 import com.dyq.bletest.view.widget.CompareHRChart;
 
 import java.lang.ref.WeakReference;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -178,6 +181,7 @@ public class ChartActivity extends BaseActivity implements ScannerFragment.OnDev
         heartRateServiceFunction = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
             if (heartRateService != null) {
+                heartRateService.stopSecondlyMethod();
                 heartRateService.setHeartRateServiceFunction(null);
             }
         }
@@ -195,7 +199,9 @@ public class ChartActivity extends BaseActivity implements ScannerFragment.OnDev
             if(heartRateService == null || heartRateService.getBeansList().size() == 0){
                 return;
             }
-            hr_compare_chart.addValue(new HrChartBean());
+            List<BleAdapterBean> ll = heartRateService.getBeansList();
+            BleAdapterBean adapterBean = ll.get(0);
+            hr_compare_chart.addValue(adapterBean.getBleMacName(),new ChartBean(adapterBean.getBleBleHrValue(),heartRateService.getRefreshTime()),true);
         }
     };
 

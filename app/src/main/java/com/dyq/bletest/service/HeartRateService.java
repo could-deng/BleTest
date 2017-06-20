@@ -176,16 +176,32 @@ public class HeartRateService extends Service {
     }
 
     /**
+     * 获取当前刷新时间
+     * @return
+     */
+    public long getRefreshTime(){
+        if(refreshTime == -1){
+            return System.currentTimeMillis();
+        }
+        return refreshTime;
+    }
+
+    /**
      * 开始记录心率点，每秒的操作
      */
     private void secondlyMethod(){
+        Logger.i(Logger.DEBUG_TAG,"HeartRateService--->secondlyMethod()");
+        if(beansList.size() == 0){
+            stopSecondlyMethod();
+            return;
+        }
         //1.数据库存储
         if (refreshTime == -1) {//第一个点必须要写进数据库
             refreshTime = System.currentTimeMillis();
         } else {//其余点根据心率值选择是否写进数据库
             refreshTime += 1000;//默认增加一秒
         }
-        writeHeartRateToDb(refreshTime);
+//        writeHeartRateToDb(refreshTime);
 
         //TODO 页面画图
         heartRateServiceFunction.reDrawHeartRateData();
@@ -194,6 +210,9 @@ public class HeartRateService extends Service {
         getMyHandler().sendEmptyMessageDelayed(MSG_REPEART_DRAW_CHART, REPEART_DRAW_CHART_DELAY);
     }
 
+    public void stopSecondlyMethod(){
+        getMyHandler().removeCallbacksAndMessages(MSG_REPEART_DRAW_CHART);
+    }
 
     /**
      * 获取Handler,保证不为null
