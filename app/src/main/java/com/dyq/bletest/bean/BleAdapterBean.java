@@ -25,6 +25,8 @@ public class BleAdapterBean {
     private boolean hrBtnWork;//
     private boolean fBtnWork;
 
+    private int colorIdentify;//chartActivity中adapter中颜色标示
+
     public BleAdapterBean() {
 
     }
@@ -58,6 +60,7 @@ public class BleAdapterBean {
             lightShowTime = 0;
             hrBtnWork = false;
             fBtnWork = false;
+            colorIdentify = -1;
         }
     }
 
@@ -157,5 +160,13 @@ public class BleAdapterBean {
 
     public void setfBtnWork(boolean fBtnWork) {
         this.fBtnWork = fBtnWork;
+    }
+
+    public int getColorIdentify() {
+        return colorIdentify;
+    }
+
+    public void setColorIdentify(int colorIdentify) {
+        this.colorIdentify = colorIdentify;
     }
 }

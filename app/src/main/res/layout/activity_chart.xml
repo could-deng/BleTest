@@ -51,11 +51,58 @@
         android:id="@+id/hr_compare_chart"
         android:layout_width="match_parent"
         android:layout_height="350dp" />
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Start"
-        android:layout_gravity="center_horizontal"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <android.support.v4.widget.Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+            <Button
+                android:id="@+id/bt_start_chart_draw"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Start"
+                android:onClick="onClick"
+                android:layout_gravity="center_horizontal"/>
+            <android.support.v4.widget.Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+            <Button
+                android:id="@+id/bt_db_backup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="dbbackup"
+                android:onClick="onClick"/>
+            <android.support.v4.widget.Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+            <Button
+                android:id="@+id/bt_write_file"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="write_File"
+                android:onClick="onClick"/>
+            <android.support.v4.widget.Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+            <Button
+                android:id="@+id/bt_clear_db"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="clearDB"
+                android:onClick="onClick"/>
+            <android.support.v4.widget.Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+
+        </LinearLayout>
     </LinearLayout>
+
     </ScrollView>
 </LinearLayout>

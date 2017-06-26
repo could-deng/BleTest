@@ -76,8 +76,32 @@ public class ChartDeviceAdapter extends BaseAdapter{
         BleAdapterBean bean = getBeanList().get(i);
         holder.tv_device_name.setText(String.valueOf(bean.getBleDeviceName()));
         holder.tv_device_value.setText(String.valueOf(bean.getBleBleHrValue()));
+        if(bean.getColorIdentify()<1){
+            holder.view_device_color.setBackgroundResource(R.color.gray_text);
+        }else {
+            holder.view_device_color.setBackgroundResource(getColorByIndex(bean.getColorIdentify()));
+        }
         return view;
     }
+
+    private int getColorByIndex(int index){
+        switch (index){
+            case 1:
+                return R.color.button1;
+            case 2:
+                return R.color.button2;
+            case 3:
+                return R.color.button3;
+            case 4:
+                return R.color.button4;
+            case 5:
+                return R.color.button5;
+            case -1:
+                return -1;
+        }
+        return -1;
+    }
+
 
     private class DeviceViewHolder {
         public View view_device_color;

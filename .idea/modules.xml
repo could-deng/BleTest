@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/BLETest.iml" filepath="$PROJECT_DIR$/BLETest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/BleTest.iml" filepath="$PROJECT_DIR$/BleTest.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/databasegeneratoe/databasegeneratoe.iml" filepath="$PROJECT_DIR$/databasegeneratoe/databasegeneratoe.iml" />
     </modules>
   </component>
 </project>

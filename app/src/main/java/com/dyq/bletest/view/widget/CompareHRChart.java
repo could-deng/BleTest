@@ -6,12 +6,10 @@ import android.graphics.Paint;
 import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.view.View;
-
 import com.dyq.bletest.R;
 import com.dyq.bletest.bean.ChartBean;
 import com.dyq.bletest.bean.HrChartBean;
 import com.dyq.bletest.common.Logger;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,46 +25,21 @@ public class CompareHRChart extends View {
      */
     private int maxHr;
     private int minHr;
+    /**
+     * x轴上的总大小，默认情况下为120秒
+     */
+    private static final float xSecondSize = 120f;
 
     /**
      * 顶部文字区域高度,单位为像素
      */
-    private int horizontalPadding = 20;
-    private int verticalPadding = 20;
+    private static final int horizontalPadding = 20;
+    private static final int verticalPadding = 20;
 
     private List<HrChartBean> mValues;
-    private long mStartTime;
+    private long mStartTime = -1;
     private float xUnit;//X轴方向的每相邻点的间隔
     private float ratio;//每1值心率对应的高度
-
-    private List<HrChartBean> getValueList(){
-        if(mValues == null){
-            mValues = new ArrayList<>();
-        }
-        return mValues;
-    }
-
-    public void addValueList(List<HrChartBean> list, boolean reSet, boolean ifScreenOff){
-        if (mValues == null) {
-            mValues = new ArrayList<>();
-        }
-        if (list == null || list.size() <= 0)
-            return;
-//        Logger.i(Logger.DEBUG_TAG, "HeartRateLineChart,addValueList(),size=====" + list.size());
-//        mValues不应该清空，因为可能断开不划点，再接上心率带，再重新画点
-        if (reSet) {
-            mValues.clear();
-        }
-        if(mValues.size()>0) {
-            list.addAll(mValues);
-        }
-        mValues = list;
-
-        if (!ifScreenOff) {//熄屏不重绘
-            this.invalidate();
-        }
-
-    }
 
     /**
      * 增加点
@@ -83,15 +56,25 @@ public class CompareHRChart extends View {
             beanList.add(bean);
             mValues.add(new HrChartBean(deviceName,beanList));
         }else{
+            int existIndex = -1;
             for(int i =0;i<mValues.size();i++){
                 HrChartBean bb = mValues.get(i);
                 if(bb.getMacAddress().equals(deviceName)){
-                    bb.getBeanlist().add(bean);
-                }else{
-                    List<ChartBean> beanList = new ArrayList<>();
-                    beanList.add(bean);
-                    mValues.add(new HrChartBean(deviceName,beanList));
+                    existIndex = i;
+                    break;
                 }
+            }
+            if(existIndex != -1){
+                HrChartBean bb = mValues.get(existIndex);
+                if(bb.getBeanlist().size()>=xSecondSize) {
+                    bb.getBeanlist().remove(0);
+                }
+                bb.getBeanlist().add(bean);
+            }else{
+                Logger.e(Logger.DEBUG_TAG,deviceName+"新增加");
+                List<ChartBean> beanList = new ArrayList<>();
+                beanList.add(bean);
+                mValues.add(new HrChartBean(deviceName,beanList));
             }
         }
         if(reDraw){
@@ -104,11 +87,28 @@ public class CompareHRChart extends View {
     private int mWidth;
     /** 控件高度    */
     private int mHeight;
+
+    Paint.FontMetricsInt fontMetrics;
+
     /**画笔    */
+    private Paint paintBg;
     private Paint paint1;
     private Paint paint2;
     private Paint paint3;
+    private Paint paint4;
+    private Paint paint5;
 
+    private Paint getPaintBg(){
+        if(paintBg == null){
+            paintBg = new Paint();
+            paintBg.reset();
+            paintBg.setAntiAlias(true);
+            paintBg.setStrokeWidth(2);
+            paintBg.setStyle(Paint.Style.STROKE);
+            paintBg.setColor(getResources().getColor(R.color.chart_bg_line));
+        }
+        return paintBg;
+    }
     private Paint getPaint1(){
         if(paint1 == null){
             paint1 = new Paint();
@@ -142,32 +142,55 @@ public class CompareHRChart extends View {
         }
         return paint3;
     }
+    private Paint getPaint4(){
+        if(paint4 == null){
+            paint4 = new Paint();
+            paint4.reset();
+            paint4.setAntiAlias(true);
+            paint4.setStrokeWidth(2);
+            paint4.setStyle(Paint.Style.STROKE);
+            paint4.setColor(getResources().getColor(R.color.button4));
+        }
+        return paint4;
+    }
+    private Paint getPaint5(){
+        if(paint5 == null){
+            paint5 = new Paint();
+            paint5.reset();
+            paint5.setAntiAlias(true);
+            paint5.setStrokeWidth(2);
+            paint5.setStyle(Paint.Style.STROKE);
+            paint5.setColor(getResources().getColor(R.color.button5));
+        }
+        return paint5;
+    }
 
     /** 获取画笔
      * @param i
      * @return
      */
     private Paint SpecialListToPaint(int i){
-        if(i == 0 ){
+        if(i == 0){
             return getPaint1();
         }else if(i == 1){
             return getPaint2();
-        }else{
+        }else if(i == 2){
             return getPaint3();
+        }else if(i == 3){
+            return getPaint4();
+        }else{
+            return getPaint5();
         }
     }
 
-    public CompareHRChart(Context context) {
-        super(context);
-    }
+    public CompareHRChart(Context context) {super(context,null);}
 
     public CompareHRChart(Context context, AttributeSet attrs) {
-        super(context, attrs);
+        super(context, attrs,0);
     }
 
     public CompareHRChart(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init();
     }
 
     @Override
@@ -178,8 +201,8 @@ public class CompareHRChart extends View {
         mHeight = heightSpecSize;
         setMeasuredDimension(mWidth, mHeight);
 
-        calculateHRInterval(24,70);
-        xUnit = (mWidth-horizontalPadding*2)/120f;
+        calculateHRInterval(250,0);
+        xUnit = (mWidth-verticalPadding*2)/xSecondSize;
         ratio = (mHeight-2*horizontalPadding)*1.0f /(maxHr - minHr);
         Logger.e(Logger.DEBUG_TAG,"xUnit:"+xUnit+",ratio:"+ratio);
     }
@@ -206,17 +229,21 @@ public class CompareHRChart extends View {
      * @param canvas
      */
     private void drawBackground(Canvas canvas){
-        drawLine(canvas,horizontalPadding,mHeight-verticalPadding,mWidth-horizontalPadding,mHeight-verticalPadding,getPaint2());
-        drawLine(canvas,horizontalPadding,mHeight-verticalPadding,horizontalPadding,verticalPadding,getPaint2());
+        drawLine(canvas,horizontalPadding,mHeight-verticalPadding,mWidth-horizontalPadding,mHeight-verticalPadding,getPaintBg());
+        drawLine(canvas,horizontalPadding,mHeight-verticalPadding,horizontalPadding,verticalPadding,getPaintBg());
+
+        fontMetrics = getPaintBg().getFontMetricsInt();
+        float hrTextSize = getPaintBg().measureText(String.valueOf(maxHr));
+        canvas.drawText(String.valueOf(maxHr), horizontalPadding - hrTextSize/2,
+                (verticalPadding - fontMetrics.bottom - fontMetrics.top)/2f ,getPaintBg());
+        float textSize = getPaintBg().measureText(xSecondSize+"秒");
+        canvas.drawText(String.valueOf(xSecondSize)+"秒",mWidth-verticalPadding-textSize,
+                mHeight - (verticalPadding + fontMetrics.bottom + fontMetrics.top) / 2f,getPaintBg());
     }
 
-    private void init(){
-        calculateHRInterval(24,70);
-    }
-
-    private void calculateHRInterval(int age,int restHr){
-        maxHr = 220-age;
-        minHr = restHr - 15;
+    private void calculateHRInterval(int maxHr,int minHr){
+        this.maxHr = maxHr;
+        this.minHr = minHr;
     }
 
     /**
@@ -227,25 +254,40 @@ public class CompareHRChart extends View {
         if(mValues == null || mValues.size() == 0){
             return;
         }
-        if(mStartTime == -1){
-            mStartTime = System.currentTimeMillis();
+
+//        if(mValues.size() == 1){
+//            canvas.drawPoint(verticalPadding,getYAxisValue(chartBeanList.get(j).getHr(), 2f));
+//        }
+
+        if (mStartTime == -1) {
+            mStartTime = mValues.get(0).getBeanlist().get(0).getTime();
             return;
         }
+
+        for(int i =0;i<mValues.size();i++){
+            HrChartBean charBean = mValues.get(i);
+            if(charBean.getBeanlist().size() >= xSecondSize){
+                mStartTime = charBean.getBeanlist().get(0).getTime();//只取一个即可
+                break;
+            }
+        }
+
         for(int k = 0;k<mValues.size();k++) {
             HrChartBean ll = mValues.get(k);
             List<ChartBean> chartBeanList = ll.getBeanlist();
             if(chartBeanList.size() == 0 || chartBeanList.size() == 1){
                 continue;
             }
-            for (int i = 1; i <= chartBeanList.size(); i++) {
+            for (int i = 1; i < chartBeanList.size(); i++) {
                 int j;
                 for (j = i - 1; j >= 0; j--) {
-                    float startx = (chartBeanList.get(j).getTime() - mStartTime) / 1000f * xUnit;
-                    float starty = getYAxisValue(chartBeanList.get(j).getHr(), 2f);
-                    float endx = (chartBeanList.get(i).getTime() - mStartTime) / 1000f * xUnit;
-                    float endy = getYAxisValue(chartBeanList.get(i).getHr(), 2f);
-                    canvas.drawLine((chartBeanList.get(j).getTime() - mStartTime) / 1000f * xUnit, getYAxisValue(chartBeanList.get(j).getHr(), 2f),
-                            (chartBeanList.get(i).getTime() - mStartTime) / 1000f * xUnit, getYAxisValue(chartBeanList.get(i).getHr(), 2f), SpecialListToPaint(k));
+                    /** 零的情况也要画图 */
+                    float startx = verticalPadding + (chartBeanList.get(j).getTime() - mStartTime) / 1000f * xUnit;
+                    float starty = /*horizontalPadding*/ + getYAxisValue(chartBeanList.get(j).getHr(), 2f);
+                    float endx = verticalPadding + (chartBeanList.get(i).getTime() - mStartTime) / 1000f * xUnit;
+                    float endy = /*horizontalPadding*/ + getYAxisValue(chartBeanList.get(i).getHr(), 2f);
+                    canvas.drawLine(startx, starty, endx, endy, SpecialListToPaint(k));
+                    break;
                 }
             }
         }
@@ -264,7 +306,7 @@ public class CompareHRChart extends View {
         if(heartRate>=maxHr){
             return verticalPadding;
         }
-        return mHeight - verticalPadding - (heartRate - minHr)*ratio - paintStrokeWidth;
+        return mHeight - verticalPadding - (heartRate - minHr) * ratio - paintStrokeWidth;
     }
     /**
      * 画直线

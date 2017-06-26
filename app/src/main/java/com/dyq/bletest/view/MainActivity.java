@@ -309,8 +309,6 @@ public class MainActivity extends BaseActivity {
 
                     @Override
                     public void setFreshData(String deviceName, int minRssi, int HrMin, int HrMax, int LightIntensityMin,boolean notAutoConnect,boolean restartService) {
-                        //TODO SharePreference存储
-
                         PrefsHelper.with(MainActivity.this,Config.PREFS_USER).writeInt(Config.BleHRMIN,HrMin);
                         PrefsHelper.with(MainActivity.this,Config.PREFS_USER).writeInt(Config.BleHRMAX,HrMax);
                         PrefsHelper.with(MainActivity.this,Config.PREFS_USER).writeInt(Config.BLELIGHTINTENSITYMIN,LightIntensityMin);

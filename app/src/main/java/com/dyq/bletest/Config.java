@@ -1,5 +1,9 @@
 package com.dyq.bletest;
 
+import android.os.Environment;
+
+import java.io.File;
+
 /**
  * Created by yuanqiang on 2016/12/5.
  */
@@ -39,4 +43,19 @@ public class Config {
 
 
     public static int DeviceConnectNumMax = 5;//BLE设备连接数上限
+
+
+    public static final String PATH_APP_STORAGE = Environment.getExternalStorageDirectory().getAbsolutePath()
+            + File.separator
+            + "BleTest" + File.separator;
+
+    public static final String PATH_HR_STORAGE = PATH_APP_STORAGE+ "HR_Storage"+File.separator;
+
+//     存储数据库的关键字
+    public static String RECORD_START_IDENTIFY = "HRS";//开始存储标示 0
+    public static String RECORD_HR_IDENTIFY = "HR";//心率标示 1
+    public static String RECORD_DISCONNECT_IDENTIFY = "DISC";//设备断开 2
+    public static String RECORD_CONNECTE_IDENTIFY = "CONN";//设备重连 3
+
+    public static String fileNameEnd = ".txt";
 }

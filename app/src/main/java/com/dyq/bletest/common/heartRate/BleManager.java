@@ -216,7 +216,7 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 				}
 			}
 
-			BluetoothGatt gatt = device.connectGatt(mContext, false, getGattCallback());//TODO 暂时弄成自动重连设置
+			BluetoothGatt gatt = device.connectGatt(mContext, true, getGattCallback());//TODO 暂时弄成自动重连设置
 			if(gatt!=null) {
 				if(!haveExistGatt) {
 					mBluetoothGatt.add(gatt);
@@ -419,7 +419,7 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 				lightType = "常亮";
 				break;
 		}
-		Logger.i(Logger.DEBUG_TAG,macAddress+"设置灯光:"+lightType);
+//		Logger.i(Logger.DEBUG_TAG,macAddress+"设置灯光:"+lightType);
 	}
 
 //	/**

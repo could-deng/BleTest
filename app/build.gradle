@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 24
-    buildToolsVersion "24.0.0"
+    buildToolsVersion '25.0.0'
 
     defaultConfig {
         applicationId "com.dyq.bletest"
@@ -24,4 +24,6 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.2.0'
     compile 'no.nordicsemi.android.support.v18:scanner:0.2.0'
+    compile 'org.greenrobot:greendao:2.2.0'
+    debugCompile 'com.amitshekhar.android:debug-db:0.4.0'
 }
